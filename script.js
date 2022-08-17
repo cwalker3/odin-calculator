@@ -25,12 +25,10 @@ let inputs = [];
 //variable to store display text
 let display = document.querySelector('.display');
 
+let clearBool = false;
+
 //function that takes input array and gets values to use for operate function
 let readInputs = (inputs) => {
-    if ((!(Number(inputs[0]))) && a.length === 0) {
-        display.textContent = 'ERROR';
-        return;
-    }
     let a = [];
     let b = [];
     let operator = [];
@@ -40,33 +38,59 @@ let readInputs = (inputs) => {
             b = [];
             operator = [];
             continue;
-        }else if (Number(input) && operator.length === 0)
+        }else if (Number.isInteger(Number(input)) && operator.length === 0)
             a.push(input)
-        else if (Number(input) && operator.length > 0)
+        else if (Number.isInteger(Number(input)) && operator.length > 0)
             b.push(input)
-        else if ((!Number(input)) && operator.length === 0 && input !== ' ')
+        else if (input !== ' ' && operator.length === 0)
             operator.push(input);
     }
-        let answer = operate(a.join(''), operator.join(''), b.join(''));
-        return String(answer).split('');
-        
-
+    //if (a.length )
+    let answer = operate(a.join(''), operator.join(''), b.join(''));
+    return String(answer).split(''); 
 }
+
+//this bool will be used to ignore the input of 2 math symbols in a row
+let ignoreInputBool = false;
+//this bool will be used to only allow the '=' button when the values are ready
+let readyBool = false;
 
 //function that puts inputs into input array and updates display
 let updateDisplay = (e) => {
     let buttonValue = e.target.textContent;
-    if (buttonValue === 'clear' || display.textContent === 'ERROR') {
+    //when the 'clear' button is pressed, the inputs array is cleared
+    if (buttonValue === 'clear')
         inputs = [];
-    } else if (buttonValue === '=')
-        inputs = readInputs(inputs);
-    else if (Number(buttonValue) || buttonValue === '0') 
+        //when the '=' button is pressed, runs the readInputs function
+    else if (buttonValue === '=' && readyBool) {
+        inputs = readInputs(inputs) 
+        readyBool = false;
+        ignoreInputBool = false;
+        clearBool = true;
+    }
+        //if input is a number, add it to the inputs array
+    else if (Number(buttonValue) || buttonValue === '0') {
+        //if clearBool is set to true, clear the inputs array first
+        if (clearBool) 
+            inputs = [];
+            clearBool = false;
+        if (ignoreInputBool) 
+            readyBool = true;
         inputs.push(buttonValue);
-    else {
+        ignoreInputBool = false;
+    //if input is a math symbol, add it the inputs array, with spaces on both sides
+    }else if (!ignoreInputBool) {
+        //if the inputs array is empty, add 0 to the array first
+        if (inputs.length === 0) 
+            inputs.push(0);
+        clearBool = false;
         inputs.push(' ');
         inputs.push(buttonValue);
-        inputs.push(' ')
+        inputs.push(' ');
+        //set ignoreInputBool to true so we ignore mutiple math symbols in a row
+        ignoreInputBool = true;
     }
+
     display.textContent = inputs.join('');
 };
 
