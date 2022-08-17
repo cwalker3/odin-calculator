@@ -1,5 +1,5 @@
 //functions for simple calculations
-const add = (a, b) => Number(a) + Number(b);
+const add = (a, b) => a + b;
 
 const subtract = (a, b) => a - b;
 
@@ -7,9 +7,12 @@ const mulitply = (a, b) => a * b;
 
 const divide = (a, b) => a / b;
 
-//function that takes 2 numbers and an operator and calls one of the above functions
-const operate = (a, operator, b) => {
-    switch(operator) {
+const power = (a,b) => Math.pow(a, b);
+
+
+//function that takes 2 numbers and an op and calls one of the above functions
+const operate = (a, op, b) => {
+    switch(op) {
         case '+':
             return add(a, b);
         case '-':
@@ -18,80 +21,88 @@ const operate = (a, operator, b) => {
             return mulitply(a, b);
         case '/':
             return divide(a, b);
+        case '^':
+            return power(a, b);
     }
 };
-//array to store inputs
-let inputs = [];
-//variable to store display text
-let display = document.querySelector('.display');
-
-let clearBool = false;
 
 //function that takes input array and gets values to use for operate function
 let readInputs = (inputs) => {
     let a = [];
     let b = [];
-    let operator = [];
+    let op = [];
     for (let input of inputs) {
-        if (input === ' ' && operator.length > 0 && b.length > 0) {
-            a = [operate(a.join(''), operator.join(''), b.join(''))];
+        if (input === ' ' && op.length > 0 && b.length > 0) {
+            a = [operate(parseFloat(a.join('')), op.join(''), parseFloat(b.join('')))];
             b = [];
-            operator = [];
+            op = [];
             continue;
-        }else if (Number.isInteger(Number(input)) && operator.length === 0)
+        }else if ((Number.isInteger(Number(input)) || input === '.') && op.length === 0)
             a.push(input)
-        else if (Number.isInteger(Number(input)) && operator.length > 0)
+        else if ((Number.isInteger(Number(input)) || input === '.') && op.length > 0)
             b.push(input)
-        else if (input !== ' ' && operator.length === 0)
-            operator.push(input);
+        else if (input !== ' ' && op.length === 0)
+            op.push(input);
     }
     //if (a.length )
-    let answer = operate(a.join(''), operator.join(''), b.join(''));
+    let answer = operate(parseFloat(a.join('')), op.join(''), parseFloat(b.join('')));
     return String(answer).split(''); 
 }
 
-//this bool will be used to ignore the input of 2 math symbols in a row
-let ignoreInputBool = false;
-//this bool will be used to only allow the '=' button when the values are ready
-let readyBool = false;
+
+//array to store inputs
+let inputs = [];
+//variable to store display text
+let display = document.querySelector('.display');
+//this bool will be used to disable symbols
+let allowSym = true;
+let allowDec = true;
+//if this bool is true the inputs array will clear before adding an input
+let clearInputs = true;
+//these bools will be used to determine if the array is ready to be read by readInputs
+let haveOp = false;
+let ready = false;
 
 //function that puts inputs into input array and updates display
 let updateDisplay = (e) => {
-    let buttonValue = e.target.textContent;
-    //when the 'clear' button is pressed, the inputs array is cleared
-    if (buttonValue === 'clear')
+    let content = e.target.textContent;
+    let type = e.target.classList[0];
+    if (type === 'clr') {
         inputs = [];
-        //when the '=' button is pressed, runs the readInputs function
-    else if (buttonValue === '=' && readyBool) {
-        inputs = readInputs(inputs) 
-        readyBool = false;
-        ignoreInputBool = false;
-        clearBool = true;
+        allowDec = true;
     }
-        //if input is a number, add it to the inputs array
-    else if (Number(buttonValue) || buttonValue === '0') {
-        //if clearBool is set to true, clear the inputs array first
-        if (clearBool) 
+    else if (type === 'eql' && ready) {
+        inputs = readInputs(inputs);
+        clearInputs = true;
+        ready = false;
+    }else if (type === 'num') {
+        if (clearInputs)
             inputs = [];
-            clearBool = false;
-        if (ignoreInputBool) 
-            readyBool = true;
-        inputs.push(buttonValue);
-        ignoreInputBool = false;
-    //if input is a math symbol, add it the inputs array, with spaces on both sides
-    }else if (!ignoreInputBool) {
-        //if the inputs array is empty, add 0 to the array first
-        if (inputs.length === 0) 
-            inputs.push(0);
-        clearBool = false;
+        if (haveOp) {
+            ready = true;
+            haveOp = false;
+        }
+        inputs.push(content);
+        clearInputs = false;
+        allowSym = true;
+    }else if (type === 'sym' && allowSym) {
         inputs.push(' ');
-        inputs.push(buttonValue);
+        inputs.push(content);
         inputs.push(' ');
-        //set ignoreInputBool to true so we ignore mutiple math symbols in a row
-        ignoreInputBool = true;
+        haveOp = true;
+        allowSym = false;
+        ready = false;
+        clearInputs = false;
+        allowDec = true;
+    }else if (type === 'dec' && allowDec) {
+        inputs.push(content);
+        allowDec = false;
+        clearInputs = false;
     }
-
-    display.textContent = inputs.join('');
+    if (inputs.length === 0)
+        display.textContent = 0;
+    else
+        display.textContent = inputs.join(''); 
 };
 
 let buttons = document.querySelectorAll('button');
